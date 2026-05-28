@@ -21,8 +21,9 @@ x-ib-gateway: &ib-gateway
 # 三个容器共用的非凭证环境变量
 x-common-env: &common-env
   TRADING_MODE: ${TRADING_MODE:-live}
-  # 把 TWS 设置存到独立目录(用 volume 持久化), 不与镜像内 gateway 安装目录重叠,
-  # 这样将来升级镜像版本不会被旧 volume 遮蔽。
+  # 把 TWS 设置存到独立目录, 不与镜像内 gateway 安装目录重叠,
+  # 这样将来升级镜像版本不会被旧设置目录遮蔽。
+  # 该目录通过 bind mount 持久化到宿主 ./tws_settings/ (见下方各服务 volumes)。
   TWS_SETTINGS_PATH: /home/ibgateway/tws_settings
   VNC_SERVER_PASSWORD: ${VNC_SERVER_PASSWORD:-}
   TWS_ACCEPT_INCOMING: ${TWS_ACCEPT_INCOMING:-manual}
@@ -73,7 +74,8 @@ services:
       - "127.0.0.1:${ACCT1_API_PORT:-4001}:4003"
       - "127.0.0.1:${ACCT1_VNC_PORT:-5900}:5900"
     volumes:
-      - ib-gateway-1-settings:/home/ibgateway/tws_settings
+      # bind mount: 宿主 uid 必须与容器内 ibgateway(默认 1000) 一致, 否则无写权限
+      - ./tws_settings/ib-gateway-1:/home/ibgateway/tws_settings
 
   ib-gateway-2:
     <<: *ib-gateway
@@ -86,7 +88,7 @@ services:
       - "127.0.0.1:${ACCT2_API_PORT:-4011}:4003"
       - "127.0.0.1:${ACCT2_VNC_PORT:-5901}:5900"
     volumes:
-      - ib-gateway-2-settings:/home/ibgateway/tws_settings
+      - ./tws_settings/ib-gateway-2:/home/ibgateway/tws_settings
 
   ib-gateway-3:
     <<: *ib-gateway
@@ -99,9 +101,4 @@ services:
       - "127.0.0.1:${ACCT3_API_PORT:-4021}:4003"
       - "127.0.0.1:${ACCT3_VNC_PORT:-5902}:5900"
     volumes:
-      - ib-gateway-3-settings:/home/ibgateway/tws_settings
-
-volumes:
-  ib-gateway-1-settings:
-  ib-gateway-2-settings:
-  ib-gateway-3-settings:
+      - ./tws_settings/ib-gateway-3:/home/ibgateway/tws_settings
