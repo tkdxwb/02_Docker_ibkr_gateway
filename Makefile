@@ -5,7 +5,8 @@ COMPOSE ?= docker compose
 .PHONY: help up up-1 up-2 up-3 \
 	stop stop-1 stop-2 stop-3 down \
 	restart-1 restart-2 restart-3 \
-	logs logs-1 logs-2 logs-3 ps build
+	logs logs-1 logs-2 logs-3 ps build \
+	health watch
 
 help: ## 显示可用命令
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -68,3 +69,9 @@ ps: ## 查看容器运行状态
 
 build: ## 构建/重建镜像
 	$(COMPOSE) build
+
+health: ## 巡检三账户健康 (容器状态 + IB API 握手)
+	@python3 healthcheck.py
+
+watch: ## 持续巡检 (每 30 秒, 仅状态变化时告警)
+	@python3 healthcheck.py --watch 30 --quiet
